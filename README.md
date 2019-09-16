@@ -2,7 +2,7 @@
 
 about weather Flutter demo.
 
-Weather address in Chian.
+Weather address in China.
 
 ## Getting Started
 
