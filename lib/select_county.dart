@@ -5,7 +5,6 @@ import 'dart:io';
 import 'package:quiver/strings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// 提交测试
 class SelectCounty extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -118,10 +117,10 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Widget getRow(String name, int code, String weather) {
-    return new InkWell(
-      child: new Container(
+    return InkWell(
+      child: Container(
         padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-        child: new Text(name, style: new TextStyle(fontSize: 16)),
+        child: Text(name, style: new TextStyle(fontSize: 16)),
       ),
       onTap: () {
         setState(() {
@@ -153,17 +152,7 @@ class _MyHomePageState extends State<MyHomePage> {
             if (focusCountyListBean == null) {
               focusCountyListBean = new FocusCountyListBean(new List<County>());
             }
-
-            for (int i = 0; i < focusCountyListBean.countyList.length; i++) {
-              if (equalsIgnoreCase(focusCountyListBean.countyList.elementAt(i).weatherId, weatherId)){
-                Navigator.pop(context, false);
-                return;
-              }
-            }
-
-            County county = new County(countyName, weatherId);
-            focusCountyListBean.countyList.add(county);
-
+            focusCountyListBean.countyList.add(County(countyName, 0, 0));
             focusCountyJson = jsonEncode(focusCountyListBean.toJson());
             prefs.setString('focus_county_data', focusCountyJson);
             Navigator.pop(context, true);
