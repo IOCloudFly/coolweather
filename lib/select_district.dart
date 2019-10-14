@@ -1,11 +1,13 @@
 import 'dart:convert';
-import 'package:coolweather/bean/focus_county_list_bean.dart';
+import 'package:coolweather/bean/focus_district_list_bean.dart';
 import 'package:flutter/material.dart';
 import 'dart:io';
 import 'package:quiver/strings.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:convert/convert.dart';
+import 'package:crypto/crypto.dart';
 
-class SelectCounty extends StatelessWidget {
+class SelectDistrict extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MyHomePage();
@@ -28,6 +30,9 @@ class _MyHomePageState extends State<MyHomePage> {
   int provinceId = 0;
   int cityId = 0;
   int countyId = 0;
+
+  String province;
+  String city;
 
   // 天气 id
   String weatherId;
@@ -66,7 +71,7 @@ class _MyHomePageState extends State<MyHomePage> {
     try {
       var request = await httpClient.getUrl(Uri.parse(url));
       var response = await request.close();
-      if (response.statusCode == HttpStatus.OK) {
+      if (response.statusCode == HttpStatus.ok) {
         var json = await response.transform(utf8.decoder).join();
         var data = jsonDecode(json);
         setState(() {
@@ -95,6 +100,7 @@ class _MyHomePageState extends State<MyHomePage> {
       child: Scaffold(
           appBar: AppBar(
             title: Text(title),
+            elevation: 1,
           ),
           body: isLoading
               ? Center(
@@ -129,9 +135,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
         if (provinceId == 0) {
           provinceId = code;
+          province = name;
           _queryCities();
         } else if (cityId == 0) {
           cityId = code;
+          city = name;
           _queryCounties();
         } else if (countyId == 0) {
           countyId = code;
@@ -142,23 +150,69 @@ class _MyHomePageState extends State<MyHomePage> {
         if (!isEmpty(weatherId) && !isEmpty(countyName)) {
           Future<SharedPreferences> future = SharedPreferences.getInstance();
           future.then((prefs) {
-            FocusCountyListBean focusCountyListBean;
-            String focusCountyJson = prefs.getString('focus_county_data');
+            FocusDistrictListBean focusDistrictListBean;
+            String focusCountyJson = prefs.getString('focus_district_data');
             if (!isEmpty(focusCountyJson)) {
-              focusCountyListBean =
-                  FocusCountyListBean.fromJson(json.decode(focusCountyJson));
+              focusDistrictListBean =
+                  FocusDistrictListBean.fromJson(json.decode(focusCountyJson));
             }
 
-            if (focusCountyListBean == null) {
-              focusCountyListBean = new FocusCountyListBean(new List<County>());
+            if (focusDistrictListBean == null) {
+              focusDistrictListBean =
+                  new FocusDistrictListBean(new List<District>());
             }
-            focusCountyListBean.countyList.add(County(countyName, 0, 0));
-            focusCountyJson = jsonEncode(focusCountyListBean.toJson());
-            prefs.setString('focus_county_data', focusCountyJson);
-            Navigator.pop(context, true);
+            getLatLon(province + '省' + city + '市' + countyName).then((list) {
+              focusDistrictListBean.districtList.add(District(
+                  countyName, list.elementAt(0), list.elementAt(1))); // 北京坐标
+              focusCountyJson = jsonEncode(focusDistrictListBean.toJson());
+              prefs.setString('focus_district_data', focusCountyJson);
+              Navigator.pop(context, true);
+            });
           });
         }
       },
     );
+  }
+
+  Future<List<double>> getLatLon(String address) async {
+
+    String parameter =
+        'address=' + address + '&key=38366adde7d7ec1e94d652f9e90f78ce';
+
+    String url = 'https://restapi.amap.com/v3/geocode/geo?' +
+        parameter +
+        '&sig=' +
+        generateMd5(parameter);
+
+    HttpClient httpClient = new HttpClient();
+    try {
+      HttpClientRequest request = await httpClient.getUrl(Uri.parse(url));
+      HttpClientResponse response = await request.close();
+      if (response.statusCode == HttpStatus.ok) {
+        String json = await response.transform(utf8.decoder).join();
+        Map map = jsonDecode(json);
+        List list = map['geocodes'];
+        String location = list.elementAt(0)['location'];
+
+        print('address:' + address + ' location:' + location);
+
+        List<String> strList = location.split(',');
+        List<double> latLon = [
+          double.parse(strList[1]),
+          double.parse(strList[0])
+        ];
+        return latLon;
+      }
+    } catch (ignore) {}
+
+    return null;
+  }
+
+  // md5 加密
+  String generateMd5(String data) {
+    var content = new Utf8Encoder().convert(data);
+    var digest = md5.convert(content);
+    // 这里其实就是 digest.toString()
+    return hex.encode(digest.bytes);
   }
 }

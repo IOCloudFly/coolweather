@@ -19,12 +19,12 @@ class TempLineWidget extends StatelessWidget {
 Paint maxLinePaint = new Paint()
   ..style = PaintingStyle.stroke
   ..color = Colors.white70
-  ..strokeWidth = 1.4;
+  ..strokeWidth = 1;
 
 Paint minLinePaint = new Paint()
   ..style = PaintingStyle.stroke
-  ..color = Colors.white54
-  ..strokeWidth = 1.4;
+  ..color = Colors.white38
+  ..strokeWidth = 1;
 
 Paint dotPaint = new Paint()
   ..style = PaintingStyle.fill
@@ -65,7 +65,7 @@ class TempLinePainter extends CustomPainter {
     List<Temp> drawList = List();
 
     tempList.forEach((temp) {
-      drawList.add(Temp((average - temp.max) * 5, (average - temp.min) * 5));
+      drawList.add(Temp((average - temp.max) * 8, (average - temp.min) * 8));
     });
 
     double distance = size.width / tempList.length;
@@ -122,25 +122,30 @@ class TempLinePainter extends CustomPainter {
       canvas.drawCircle(Offset(x, dots.elementAt(i).min + margin), 2, dotPaint);
 
       // 画文字
-      ParagraphBuilder pb = ParagraphBuilder(ParagraphStyle(
-          textAlign: TextAlign.left,
-          fontWeight: FontWeight.w500,
-          fontStyle: FontStyle.normal,
-          fontSize: 12));
-      pb.pushStyle(ui.TextStyle(color: Colors.white70));
+      TextPainter tpMax =
+          getTextPainter('${(tempList.elementAt(i).max + 0.5).toInt()}' + '°');
+      tpMax.paint(
+          canvas, Offset(x - tpMax.width / 2, dots.elementAt(i).max - 15));
 
-      pb.addText('${tempList.elementAt(i).max.toInt()}' + '°');
-      ParagraphConstraints pc = ParagraphConstraints(width: 30);
-      Paragraph paragraph = pb.build()..layout(pc);
-      Offset offset = Offset(x, dots.elementAt(i).max - 20);
-      canvas.drawParagraph(paragraph, offset);
-
-      pb.addText('${tempList.elementAt(i).min.toInt()}' + '°');
-      Paragraph paragraph2 = pb.build()..layout(pc);
-      Offset offset2 = Offset(x, dots.elementAt(i).min + margin + 5);
-
-      canvas.drawParagraph(paragraph2, offset2);
+      TextPainter tpMin =
+          getTextPainter('${(tempList.elementAt(i).min + 0.5).toInt()}' + '°');
+      tpMin.paint(canvas,
+          Offset(x - tpMin.width / 2, dots.elementAt(i).min + margin + 5));
     }
+  }
+
+  // 画文字
+  TextPainter getTextPainter(String text) {
+    return TextPainter(
+      textDirection: TextDirection.ltr,
+      text: TextSpan(
+        text: text,
+        style: TextStyle(
+          color: Colors.white70,
+          fontSize: 10,
+        ),
+      ),
+    )..layout();
   }
 
   void drawBg(List<Temp> dots, double distance, Size size, Canvas canvas) {
